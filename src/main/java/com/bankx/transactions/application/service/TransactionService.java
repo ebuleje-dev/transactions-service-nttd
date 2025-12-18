@@ -6,6 +6,7 @@ import com.bankx.transactions.domain.model.Transaction;
 import com.bankx.transactions.domain.repository.AccountRepository;
 import com.bankx.transactions.domain.repository.TransactionRepository;
 import com.bankx.transactions.exception.BusinessException;
+import com.bankx.transactions.infrastructure.config.LogContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.codec.ServerSentEvent;
@@ -26,17 +27,29 @@ public class TransactionService {
     private final TransactionRepository txRepo;
     private final RiskService riskService;
     private final Sinks.Many<Transaction> txSink;
+    private final LogContext logContext;
 
 
     public Mono<Transaction> create(CreateTxRequest req) {
-        return accountRepo.findByNumber(req.getAccountNumber())
+        log.debug("Creating transaction: account={}, type={}, amount={}",
+                req.getAccountNumber(), req.getType(), req.getAmount());
+
+        Mono<Transaction> transactionMono = accountRepo.findByNumber(req.getAccountNumber())
 
                 .switchIfEmpty(Mono.error(new BusinessException("account_not_found")))
 
                 .flatMap(account -> validateAndApply(account, req))
 
+                .doOnSuccess(tx -> log.info("Transaction created successfully: id={}, account={}, amount={}",
+                        tx.getId(), req.getAccountNumber(), req.getAmount()))
+
+                .doOnError(BusinessException.class, e -> log.warn("Transaction failed: account={}, reason={}",
+                        req.getAccountNumber(), e.getMessage()))
+
                 .onErrorMap(IllegalStateException.class,
                         e -> new BusinessException(e.getMessage()));
+
+        return logContext.withMdc(transactionMono);
     }
 
     /**
@@ -47,18 +60,27 @@ public class TransactionService {
         String type = req.getType().toUpperCase();
         BigDecimal amount = req.getAmount();
 
+        log.debug("Validating transaction: currency={}, type={}, amount={}",
+                acc.getCurrency(), type, amount);
+
         // Rules JPA
         return riskService.isAllowed(acc.getCurrency(), type, amount)
+
+                .doOnNext(allowed -> log.debug("Risk validation result: allowed={}", allowed))
 
                 .flatMap(allowed -> {
 
                     // Risk
                     if (!allowed) {
+                        log.warn("Transaction rejected by risk rules: currency={}, type={}, amount={}",
+                                acc.getCurrency(), type, amount);
                         return Mono.error(new BusinessException("risk_rejected"));
                     }
 
                     // funds debit
                     if ("DEBIT".equals(type) && acc.getBalance().compareTo(amount) < 0) {
+                        log.warn("Insufficient funds: account={}, balance={}, requested={}",
+                                acc.getNumber(), acc.getBalance(), amount);
                         return Mono.error(new BusinessException("insufficient_funds"));
                     }
 
