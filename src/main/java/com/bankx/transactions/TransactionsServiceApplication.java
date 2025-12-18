@@ -1,4 +1,4 @@
-package com.bankx.transactions_service;
+package com.bankx.transactions;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
