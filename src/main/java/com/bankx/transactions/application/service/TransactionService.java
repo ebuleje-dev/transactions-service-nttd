@@ -64,18 +64,22 @@ public class TransactionService {
                     }
 
                     // Update Balance
-                    return Mono.just(acc)
-                            .publishOn(Schedulers.parallel())
-                            .map(a -> {
-                                BigDecimal newBalance = "DEBIT".equals(type)
-                                        ? a.getBalance().subtract(amount)
-                                        : a.getBalance().add(amount);
-                                a.setBalance(newBalance);
-                                return a;
-                            })
+                    // Error: Object Mutation 'acc' -> Race condition
+                    // FIX: Crete new object (inmutabilidad reactiva)
+                    BigDecimal newBalance = "DEBIT".equals(type)
+                            ? acc.getBalance().subtract(amount)
+                            : acc.getBalance().add(amount);
 
-                            // Save Account updated
-                            .flatMap(accountRepo::save)
+                    Account updatedAccount = Account.builder()
+                            .id(acc.getId())
+                            .number(acc.getNumber())
+                            .holderName(acc.getHolderName())
+                            .currency(acc.getCurrency())
+                            .balance(newBalance)
+                            .build();
+
+                    // Save Account updated
+                    return accountRepo.save(updatedAccount)
 
                             // Create transaction
                             .flatMap(savedAccount -> txRepo.save(
