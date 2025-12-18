@@ -29,3 +29,39 @@ logging:
     org.springframework.data.mongodb: DEBUG
     org.hibernate.SQL: DEBUG
     org.springframework.web.reactive: DEBUG
+
+# Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics
+  endpoint:
+    health:
+      show-details: always
+
+# Resilience4j
+resilience4j:
+  circuitbreaker:
+    instances:
+      riskClient:
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        recordExceptions:
+          - java.lang.Exception
+
+  retry:
+    instances:
+      riskClient:
+        maxAttempts: 3
+        waitDuration: 200ms
+        retryExceptions:
+          - java.lang.Exception
+
+  timelimiter:
+    instances:
+      riskClient:
+        timeoutDuration: 2s

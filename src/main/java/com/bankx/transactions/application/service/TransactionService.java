@@ -25,7 +25,7 @@ public class TransactionService {
 
     private final AccountRepository accountRepo;
     private final TransactionRepository txRepo;
-    private final RiskService riskService;
+    private final RiskRemoteClient riskRemoteClient;
     private final Sinks.Many<Transaction> txSink;
     private final LogContext logContext;
 
@@ -63,8 +63,8 @@ public class TransactionService {
         log.debug("Validating transaction: currency={}, type={}, amount={}",
                 acc.getCurrency(), type, amount);
 
-        // Rules JPA
-        return riskService.isAllowed(acc.getCurrency(), type, amount)
+        // Risk validation via remote service (with Circuit Breaker + Retry + TimeLimiter)
+        return riskRemoteClient.isAllowed(acc.getCurrency(), type, amount)
 
                 .doOnNext(allowed -> log.debug("Risk validation result: allowed={}", allowed))
 
