@@ -1,0 +1,54 @@
+server:
+  port: 8084
+
+spring:
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/bankx-test
+      auto-index-creation: true
+
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+
+logging:
+  level:
+    com.bankx.transactions: DEBUG
+    org.springframework.web: INFO
+    org.springframework.data.mongodb: INFO
+    org.hibernate: WARN
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      riskClient:
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        recordExceptions:
+          - java.lang.Exception
+
+  retry:
+    instances:
+      riskClient:
+        maxAttempts: 3
+        waitDuration: 200ms
+        retryExceptions:
+          - java.lang.Exception
+
+  timelimiter:
+    instances:
+      riskClient:
+        timeoutDuration: 2s
