@@ -29,3 +29,28 @@ logging:
     org.springframework.data.mongodb: DEBUG
     org.hibernate.SQL: DEBUG
     org.springframework.web.reactive: DEBUG
+
+#Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics
+
+#Resilience4j config
+resilience4j:
+  circuitbreaker:
+    instances:
+      riskClient:
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+  retry:
+    instances:
+      riskClient:
+        maxAttempts: 3
+        waitDuration: 200ms
+  timelimiter:
+    instances:
+      riskClient:
+        timeoutDuration: 1s
