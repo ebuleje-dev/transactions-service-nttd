@@ -16,7 +16,7 @@ import java.math.BigDecimal;
 public class RiskRemoteClient {
     private final WebClient riskWebClient;
 
-    @TimeLimiter(name = "riskClient")
+    // @TimeLimiter(name = "riskClient") // Don't use in Mono - Resilience4j limit
     @Retry(name = "riskClient")
     @CircuitBreaker(name = "riskClient", fallbackMethod = "fallback")
     public Mono<Boolean> isAllowed(String currency, String type, BigDecimal
