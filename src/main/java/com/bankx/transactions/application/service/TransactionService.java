@@ -6,6 +6,7 @@ import com.bankx.transactions.domain.model.Transaction;
 import com.bankx.transactions.domain.repository.AccountRepository;
 import com.bankx.transactions.domain.repository.TransactionRepository;
 import com.bankx.transactions.exception.BusinessException;
+import com.bankx.transactions.infrastructure.config.LogContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.codec.ServerSentEvent;
@@ -27,18 +28,42 @@ public class TransactionService {
     private final TransactionRepository txRepo;
     private final RiskService riskService;
     private final Sinks.Many<Transaction> txSink;
+    private final LogContext logContext;
 
 
     public Mono<Transaction> create(CreateTxRequest req) {
-        return accountRepo.findByNumber(req.getAccountNumber())
 
-                .switchIfEmpty(Mono.error(new BusinessException("account_not_found")))
+        log.debug("Creating transaction: account={}, type={}, amount={}",
+                req.getAccountNumber(), req.getType(), req.getAmount());
 
-                .flatMap(account -> validateAndApply(account, req))
+        Mono<Transaction> transactionMono =
+                accountRepo.findByNumber(req.getAccountNumber())
 
-                .onErrorMap(IllegalStateException.class,
-                        e -> new BusinessException(e.getMessage()));
+                        .switchIfEmpty(Mono.error(
+                                new BusinessException("account_not_found")
+                        ))
+
+                        .flatMap(account -> validateAndApply(account, req))
+
+                        .doOnSuccess(tx ->
+                                log.info("Transaction created successfully: id={}, account={}, amount={}",
+                                        tx.getId(),
+                                        req.getAccountNumber(),
+                                        req.getAmount())
+                        )
+
+                        .onErrorMap(IllegalStateException.class,
+                                e -> new BusinessException(e.getMessage()))
+
+                        .doOnError(BusinessException.class, e ->
+                                log.warn("Transaction failed: account={}, reason={}",
+                                        req.getAccountNumber(),
+                                        e.getMessage())
+                        );
+
+        return logContext.withMdc(transactionMono);
     }
+
 
     /**
      * Transaction Validation
