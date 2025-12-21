@@ -29,8 +29,8 @@
 	<properties>
 		<java.version>17</java.version>
         <jacoco.version>0.8.12</jacoco.version>
-        <sonar.host.url>http://localhost:8081</sonar.host.url>
-        <sonar.token>squ_9f3ca4a98efaba460a9ae87d3fdd4fe342310b02</sonar.token>
+        <sonar.host.url>http://localhost:9000</sonar.host.url>
+        <sonar.token>squ_0c02dd3a1a453458f02aca297cc40064bb867386</sonar.token>
 	</properties>
 	<dependencies>
 
