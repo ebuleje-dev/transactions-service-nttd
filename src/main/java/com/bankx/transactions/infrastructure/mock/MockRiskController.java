@@ -35,8 +35,8 @@ public class MockRiskController {
     if (fail) {
       return Mono.error(new RuntimeException("risk_down"));
     }
-    return Mono.just(("DEBIT".equalsIgnoreCase(type)
-            && amount.compareTo(new BigDecimal("1200")) > 0) ? false : true)
+    return Mono.just(!("DEBIT".equalsIgnoreCase(type)
+            && amount.compareTo(new BigDecimal("1200")) > 0))
         .delayElement(Duration.ofMillis(delayMs));
   }
 }

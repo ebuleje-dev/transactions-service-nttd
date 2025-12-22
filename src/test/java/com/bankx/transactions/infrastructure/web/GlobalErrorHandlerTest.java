@@ -14,6 +14,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 
 /**
  * Integration tests for GlobalErrorHandler.
@@ -136,5 +137,23 @@ class GlobalErrorHandlerTest {
           .exchange()
           .expectStatus().isCreated();
     }
+  }
+
+  @Test
+  void handleGenericException() {
+    GlobalErrorHandler handler = new GlobalErrorHandler();
+    Exception exception = new Exception("Unexpected error occurred");
+
+    handler.handleGenericException(exception)
+        .as(StepVerifier::create)
+        .assertNext(response -> {
+          org.assertj.core.api.Assertions.assertThat(response.getStatusCode().value())
+              .isEqualTo(500);
+          org.assertj.core.api.Assertions.assertThat(response.getBody())
+              .isNotNull()
+              .containsEntry("error", "internal_error")
+              .containsEntry("details", "Unexpected error occurred");
+        })
+        .verifyComplete();
   }
 }

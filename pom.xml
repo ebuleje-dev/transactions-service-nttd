@@ -162,7 +162,9 @@
                                 <reportFormat>XML</reportFormat>
                             </reportFormats>
                             <excludes>
-                                <exclude>**/config/**</exclude>
+                                <exclude>**/config/WebClientCfg*</exclude>
+                                <exclude>**/config/SinkConfig*</exclude>
+                                <exclude>**/config/LogContext*</exclude>
                                 <exclude>com/bank/events/**</exclude>
                                 <exclude>**/*Application*</exclude>
                                 <exclude>**/dto/**</exclude>
@@ -210,7 +212,7 @@
                             <configLocation>google_checks.xml</configLocation>
                             <encoding>UTF-8</encoding>
                             <consoleOutput>true</consoleOutput>
-                            <failsOnError>false</failsOnError>        <!--  No detiene el build [Si ponemos true saldrá error no compila, debemos dejar "true" y lograr resolver los errores]-->
+                            <failsOnError>true</failsOnError>        <!--  No detiene el build [Si ponemos true saldrá error no compila, debemos dejar "true" y lograr resolver los errores]-->
                             <violationSeverity>warning</violationSeverity>
                             <outputFile>${project.build.directory}/checkstyle-result.xml</outputFile>
                             <outputFileFormat>xml</outputFileFormat>
